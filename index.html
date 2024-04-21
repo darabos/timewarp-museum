@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Timewarp Museum</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <style>
+body {
+  margin: 0;
+  background: black;
+  color: white;
+  font-family: "VT323", monospace;
+}
+a.button {
+  color: white;
+  text-decoration: none;
+  font-size: 24px;
+}
+a {
+  color: #3bf;
+}
+img {
+  image-rendering: pixelated;
+}
+#app {
+}
+.ship {
+  position: relative;
+  width: 128px;
+  height: 200px;
+}
+.gallery-view {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-evenly;
+}
+.detailed-view {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: start;
+  gap: 20px;
+}
+.gallery-view .ship {
+  cursor: pointer;
+}
+.panel {
+  width: 100%;
+  position: relative;
+}
+.cockpit {
+  width: 110px;
+  height: 60px;
+  position: absolute;
+  top: 130px;
+  left: 8px;
+}
+.description {
+  white-space: pre-wrap;
+  margin-bottom: 20px;
+}
+h1, h2 {
+  font-weight: normal;
+}
+h2 {
+  margin-top: -25px;
+  font-size: 20px;
+}
+.tag {
+  background: #272;
+  border-radius: 5px;
+  padding: 2px 5px;
+  margin: 0 5px;
+  cursor: pointer;
+}
+.search-bar {
+  margin: 20px;
+}
+.footer {
+  margin: 20px;
+  text-align: center;
+}
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="search-bar" v-if="search">
+      searching for: <span class="tag" v-on:click.prevent="search = null">{{search}}</span>
+    </div>
+    <div class="gallery-view"  v-if="!selected">
+      <div class="ship" v-for="ship in filtered(ships, search)"
+      v-on:mouseover="animated = ship.id"
+      v-on:click="selected = ship"
+      >
+        <img class="panel" v-bind:src="'panels/' + ship.id + '-panel.png'">
+        <img class="cockpit" v-bind:src="'cockpits/' + ship.id + '-cockpit.' + (animated === ship.id ? 'gif' : 'png')">
+      </div>
+    </div>
+
+    <div class="detailed-view" v-if="selected">
+      <a href class="button" v-on:click.prevent="selected = null">&lt;&lt; Back</a>
+      <div class="ship">
+        <img class="panel" v-bind:src="'panels/' + selected.id + '-panel.png'">
+        <img class="cockpit" v-bind:src="'cockpits/' + selected.id + '-cockpit.gif'">
+      </div>
+      <div class="data">
+        <h1>
+          {{selected.Info.name1}} {{selected.Info.name2}}
+        </h1>
+        <h2>made for {{selected.Info.origin}}</h2>
+        <p>Code: <span class="tag" v-for="p in selected.Info.coders" v-on:click="clickTag(p)">{{p}}</span></p>
+        <p>Art: <span class="tag" v-for="p in selected.Info.gfx" v-on:click="clickTag(p)">{{p}}</span></p>
+        <p v-if="captainNames(selected)">Captain names: {{captainNames(selected)}}</p>
+      </div>
+      <div class="description">
+        {{selected.description}}
+      </div>
+    </div>
+    <div class="footer">
+      Timewarp is an open-source clone of Star Control 2. This page is a list of fan ships made for the game.
+      [ <a href="http://timewarp.sourceforge.net/">SourceForge</a>
+      | <a href="https://github.com/darabos/timewarp">GitHub mirror</a>
+      | <a href="https://www.kickstarter.com/projects/pistolshrimp/free-stars-children-of-infinity">Children of Infinity Kickstarter</a>
+      | <a href="https://github.com/darabos/timewarp-museum">this page</a>
+      ]
+    </div>
+</div>
+  <script>
+
+  const { createApp, ref, onMounted } = Vue
+
+  createApp({
+    setup() {
+      const ships = ref([]);
+      onMounted(async () => {
+        const f = await fetch('ships.json')
+        const data = await f.json()
+        const s = []
+        for (const [id, ship] of Object.entries(data)) {
+          ship.id = id;
+          s.push(ship)
+        }
+        s.sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
+        ships.value = s
+      })
+      const animated = ref(null)
+      const selected = ref(null)
+      const search = ref('')
+      return {
+        ships, animated, selected, search,
+        captainNames(ship) {
+          if (!ship.Names) return ''
+          const num = parseInt(ship.Names.numnames)
+          if (!num) return ''
+          const names = []
+          for (let i = 1; i <= num; i++) {
+            names.push(ship.Names['captname' + i])
+          }
+          return names.join(', ')
+        },
+        filtered(ships, search) {
+          if (!search) return ships
+          return ships.filter(ship =>
+            ship.Info.coders && ship.Info.coders.map(p => p.toLowerCase()).includes(search.toLowerCase()) ||
+              ship.Info.gfx && ship.Info.gfx.map(p => p.toLowerCase()).includes(search.toLowerCase()))
+        },
+        clickTag(p) {
+          search.value = p
+          selected.value = null
+        },
+      }
+    }
+  }).mount('#app')
+  </script>
+</body>
+</html>
