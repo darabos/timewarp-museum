@@ -112,6 +112,7 @@ h2 {
         <h2>made for {{selected.Info.origin}}</h2>
         <p>Code: <span class="tag" v-for="p in selected.Info.coders" v-on:click="clickTag(p)">{{p}}</span></p>
         <p>Art: <span class="tag" v-for="p in selected.Info.gfx" v-on:click="clickTag(p)">{{p}}</span></p>
+        <p>Sound: <span class="tag" v-for="p in sfxAndDitty(selected)" v-on:click="clickTag(p)">{{p}}</span></p>
         <p v-if="captainNames(selected)">Captain names: {{captainNames(selected)}}</p>
       </div>
       <div class="description">
@@ -164,12 +165,19 @@ h2 {
           if (!search) return ships
           return ships.filter(ship =>
             ship.Info.coders && ship.Info.coders.map(p => p.toLowerCase()).includes(search.toLowerCase()) ||
-              ship.Info.gfx && ship.Info.gfx.map(p => p.toLowerCase()).includes(search.toLowerCase()))
+              ship.Info.gfx && ship.Info.gfx.map(p => p.toLowerCase()).includes(search.toLowerCase()) ||
+              ship.Info.sfx && ship.Info.sfx.toLowerCase() === search.toLowerCase() ||
+              ship.Info.ditty && ship.Info.ditty.toLowerCase() === search.toLowerCase())
         },
         clickTag(p) {
           search.value = p
           selected.value = null
         },
+        sfxAndDitty(ship) {
+          const sfx = [ship.Info.sfx] || []
+          if (ship.Info.ditty && ship.Info.ditty !== sfx[0]) sfx.push('ditty')
+          return sfx.filter(p => p)
+        }
       }
     }
   }).mount('#app')
